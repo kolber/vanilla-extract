@@ -9,6 +9,7 @@ import type {
   CSSPropertiesWithVars,
   FeatureQueries,
   MediaQueries,
+  ContainerQueries,
   StyleRule,
   StyleWithSelectors,
   GlobalFontFaceRule,
@@ -79,7 +80,13 @@ function dashify(str: string) {
 
 const DOUBLE_SPACE = '  ';
 
-const specialKeys = [...simplePseudos, '@media', '@supports', 'selectors'];
+const specialKeys = [
+  ...simplePseudos,
+  '@container',
+  '@media',
+  '@supports',
+  'selectors',
+];
 
 interface CSSRule {
   conditions?: Array<string>;
@@ -140,6 +147,7 @@ class Stylesheet {
 
     this.currConditionalRuleset = new ConditionalRuleset();
 
+    this.transformContainer(root, root.rule['@container']);
     this.transformMedia(root, root.rule['@media']);
     this.transformSupports(root, root.rule['@supports']);
 
@@ -310,8 +318,51 @@ class Stylesheet {
         selectorRule!['@supports'],
         conditions,
       );
+
+      this.transformContainer(
+        selectorRoot,
+        selectorRule!['@container'],
+        conditions,
+      );
+
       this.transformMedia(selectorRoot, selectorRule!['@media'], conditions);
     });
+  }
+
+  transformContainer(
+    root: CSSStyleBlock | CSSSelectorBlock,
+    rules:
+      | ContainerQueries<
+          StyleWithSelectors & FeatureQueries<StyleWithSelectors>
+        >
+      | undefined,
+    parentConditions: Array<string> = [],
+  ) {
+    if (rules) {
+      this.currConditionalRuleset?.addConditionPrecedence(
+        parentConditions,
+        Object.keys(rules).map((query) => `@container ${query}`),
+      );
+
+      forEach(rules, (mediaRule, query) => {
+        const conditions = [...parentConditions, `@container ${query}`];
+
+        this.addConditionalRule(
+          {
+            selector: root.selector,
+            rule: omit(mediaRule, specialKeys),
+          },
+          conditions,
+        );
+
+        if (root.type === 'local') {
+          this.transformSimplePseudos(root, mediaRule!, conditions);
+          this.transformSelectors(root, mediaRule!, conditions);
+        }
+
+        this.transformSupports(root, mediaRule!['@supports'], conditions);
+      });
+    }
   }
 
   transformMedia(

@@ -57,6 +57,39 @@ describe('transformCss', () => {
     `);
   });
 
+  it('should handle @container queries', () => {
+    expect(
+      transformCss({
+        composedClassLists: [],
+        localClassNames: ['testClass'],
+        cssObjs: [
+          {
+            type: 'local',
+            selector: 'testClass',
+            rule: {
+              color: 'red',
+              '@container': {
+                '(min-width: 700px)': {
+                  color: 'yellow',
+                },
+              },
+            },
+          },
+        ],
+      }).join('\n'),
+    ).toMatchInlineSnapshot(`
+      ".testClass {
+        color: red;
+      }
+      @container (min-width: 700px) {
+        .testClass {
+          color: yellow;
+        }
+      }
+      "
+    `);
+  });
+
   it('should handle media queries', () => {
     expect(
       transformCss({

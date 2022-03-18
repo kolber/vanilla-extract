@@ -42,6 +42,12 @@ export interface MediaQueries<StyleType> {
   };
 }
 
+export interface ContainerQueries<StyleType> {
+  '@container'?: {
+    [query: string]: StyleType;
+  };
+}
+
 export interface FeatureQueries<StyleType> {
   '@supports'?: {
     [query: string]: StyleType;
@@ -53,10 +59,12 @@ export interface StyleWithSelectors extends CSSPropertiesAndPseudos {
 }
 
 export type StyleRule = StyleWithSelectors &
+  ContainerQueries<StyleWithSelectors & FeatureQueries<StyleWithSelectors>> &
   MediaQueries<StyleWithSelectors & FeatureQueries<StyleWithSelectors>> &
   FeatureQueries<StyleWithSelectors & MediaQueries<StyleWithSelectors>>;
 
 export type GlobalStyleRule = CSSPropertiesWithVars &
+  ContainerQueries<StyleWithSelectors & FeatureQueries<StyleWithSelectors>> &
   MediaQueries<CSSPropertiesWithVars & FeatureQueries<CSSPropertiesWithVars>> &
   FeatureQueries<CSSPropertiesWithVars & MediaQueries<CSSPropertiesWithVars>>;
 
